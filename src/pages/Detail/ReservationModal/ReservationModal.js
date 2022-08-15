@@ -3,7 +3,7 @@ import { InputNumber, Input, DatePicker } from 'antd';
 import moment from 'moment';
 import { UserOutlined } from '@ant-design/icons';
 import * as S from './ReservationModal.styles';
-import 'antd/dist/antd.css';
+import 'antd/dist/antd.min.css';
 
 const ReservationModal = ({ ismodalView }) => {
   const isUserCounter = value => {

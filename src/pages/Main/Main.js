@@ -5,7 +5,7 @@ import moment from 'moment';
 import 'moment/locale/ko';
 import locale from 'antd/es/date-picker/locale/ko_KR';
 import * as S from './Main.styled';
-import 'antd/dist/antd.css';
+import 'antd/dist/antd.min.css';
 
 const DATE_FORMAT = 'YYYY년 MM월 DD일';
 

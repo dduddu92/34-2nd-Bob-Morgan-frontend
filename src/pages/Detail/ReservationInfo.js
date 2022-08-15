@@ -7,7 +7,7 @@ import { useRecoilState } from 'recoil';
 
 import moment from 'moment';
 import * as S from './ReservationInfo.styles';
-import 'antd/dist/antd.css';
+import 'antd/dist/antd.min.css';
 
 const ResevationInfo = ({ placeName, placeRegion }) => {
   const [value] = useState(null);

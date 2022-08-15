@@ -1,7 +1,7 @@
 import { DatePicker, Space } from 'antd';
 import moment from 'moment';
 import * as S from './ReservationInfo.styles';
-import 'antd/dist/antd.css';
+import 'antd/dist/antd.min.css';
 
 const ResevationInfo = ({ date, placeList }) => {
   const format = 'YYYY-MM-DD';
