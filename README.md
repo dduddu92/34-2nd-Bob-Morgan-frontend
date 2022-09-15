@@ -340,4 +340,454 @@ const KakaoLogin = () => {
 
 ### 🔆Detail
 
+- serch 페이지에서 자신이 선택한 식장정보의 디테일 정보(메뉴 사진(캐러셀), 매장명, 매장 위치, 대표메뉴, 가격정보등을) 보여주고, 선택한 음시점의 날짜와 시간 예약자명 인원수와 특이사항을 기재해 예약할 수 있는 페이지이다. 
+![bobmorgan-01](https://user-images.githubusercontent.com/93850460/185525595-54bcbc30-a197-428a-9827-3240236e2ca0.gif)
+
+#### 매장 음식 사진 캐러셀  slick-slider : https://react-slick.neostack.com 사용해서 기술 구현
+
+DetailCarousel.js 
+```javascript
+import React from 'react';
+import * as S from './DetailCarousel.style';
+import 'slick-carousel/slick/slick.css';
+import 'slick-carousel/slick/slick-theme.css';
+
+const DetailCarousel = ({ carouselImage }) => {
+  const settings = {
+    className: 'slider variable-width',
+    dots: false,
+    arrows: true,
+    infinite: true,
+    centerMode: true,
+    slidesToShow: 3,
+    slidesToScroll: 1,
+    autoplay: true,
+    speed: 8000,
+    autoplaySpeed: 0,
+    cssEase: 'linear',
+    variableWidth: true,
+    pauseOnHover: false,
+  };
+
+  return (
+    <S.Container>
+      <S.StyledSlider {...settings}>
+        {carouselImage.map(item => {
+          return (
+            <div key={item.id}>
+              <S.ImageContainer>
+                <S.Image src={item.url} />
+              </S.ImageContainer>
+            </div>
+          );
+        })}
+      </S.StyledSlider>
+    </S.Container>
+  );
+};
+
+```
+구현하고자 하는 캐러셀 옵션을 settings 변수로 선언하여 사용하였다. 
+
+#### 예약기능
+
+```javascript
+import React, { useEffect, useState, Space } from 'react';
+import { useLocation, useParams } from 'react-router-dom';
+import { TimePicker, InputNumber, Input, DatePicker } from 'antd';
+import { UserOutlined } from '@ant-design/icons';
+import { tokenState } from '../../components/SocialLogin/GlobalState';
+import { useRecoilState } from 'recoil';
+
+import moment from 'moment';
+import * as S from './ReservationInfo.styles';
+import 'antd/dist/antd.css';
+
+const ResevationInfo = ({ placeName, placeRegion }) => {
+  const [value] = useState(null);
+  const [userCount, setUserCount] = useState(0);
+  const [userName, setUserName] = useState('');
+  const [request, setUserRequest] = useState('');
+  const [reservationTime, setReservationTime] = useState('');
+  const [token, setToken] = useRecoilState(tokenState);
+  const [date, setDate] = useState('');
+  const location = useLocation();
+  const params = useParams();
+  const { RangePicker } = DatePicker;
+
+  const format = 'HH:mm';
+
+  const range = (start, end) => {
+    const result = [];
+
+    for (let i = start; i < end; i++) {
+      result.push(i);
+    }
+
+    return result;
+  };
+
+  const onChangeDate = (date, dateString) => {
+    setDate(dateString);
+  };
+
+  const disabledDate = current => {
+    let customDate = moment().format('YYYY-MM-DD');
+    return current && current < moment(customDate, 'YYYY-MM-DD');
+  };
+
+  const disabledDateTime = () => ({
+    disabledHours: () => range(0, 24).splice(4, 20),
+    disabledMinutes: () => range(30, 60),
+    disabledSeconds: () => [55, 56],
+  });
+ 
+  const onChangeTime = (time, timeString) => {
+    console.log(time, timeString);
+    setReservationTime(timeString);
+  };
+
+
+  const reservationUSer = value => {
+    setUserCount(value);
+  };
+
+  
+  const onChangeRequest = e => {
+    setUserRequest(e.target.value);
+  };
+  
+  const onChangeUserName = e => {
+    setUserName(e.target.value);
+  };
+  
+  const submit = () => {
+    fetch(`http://10.58.3.127:8000/reservations/${params.id}`, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        Authorization: localStorage.getItem('morganToken'),
+      },
+      body: JSON.stringify({
+        reservation_date: date,
+        under_name: userName,
+        number_of_people: userCount,
+        request_message: request,
+        reservation_time: reservationTime,
+      }),
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.access_token) {
+          alert('예약 완료 되었습니다.');
+        }
+        alert('예약 완료 되었습니다.');
+      });
+  };
+
+  return (
+    <S.ReservationWrapper>
+      <S.Reservation>
+        <S.ReservationTitle>제주 맛집</S.ReservationTitle>
+        <S.ResevationContents>
+          <S.ResevationInfo>
+            <S.Title>지역</S.Title>
+            <S.Info>{placeRegion}</S.Info>
+          </S.ResevationInfo>
+          <S.ResevationInfo>
+            <S.Title>가게 이름</S.Title>
+            <S.Info>{placeName}</S.Info>
+          </S.ResevationInfo>
+          <S.ResevationInfo>
+            <S.Title>예약 날짜</S.Title>
+            <S.Info>
+              <DatePicker
+                format="YYYY-MM-DD"
+                disabledDate={disabledDate}
+                onChange={onChangeDate}
+              />
+            </S.Info>
+          </S.ResevationInfo>
+          <S.ResevationInfo>
+            <S.Title>시간</S.Title>
+            <S.Info>
+              <TimePicker
+                defaultValue={moment(format)}
+                format={format}
+                minuteStep={30}
+                onChange={onChangeTime}
+              />
+            </S.Info>
+          </S.ResevationInfo>
+          <S.ResevationInfo>
+            <S.Title>인원 수</S.Title>
+            <S.Info>
+              <InputNumber
+                min={1}
+                max={10}
+                defaultValue={1}
+                onChange={reservationUSer}
+              />
+            </S.Info>
+          </S.ResevationInfo>
+        </S.ResevationContents>
+
+        <S.RequestsSection>
+          <S.ResevationUserInfo>
+            <S.RequestTitle>예약자 명</S.RequestTitle>
+            <S.Info>
+              <Input
+                placeholder="예약자명"
+                prefix={<UserOutlined />}
+                onChange={onChangeUserName}
+              />
+            </S.Info>
+          </S.ResevationUserInfo>
+          <S.RequestInfo>
+            <S.RequestTitle>요청 사항</S.RequestTitle>
+            <Input showCount maxLength={500} onChange={onChangeRequest} />
+          </S.RequestInfo>
+        </S.RequestsSection>
+      </S.Reservation>
+
+      <S.ReservationButton onClick={submit}>
+        <S.DoneIcon src="/images/icon/done.png" />
+        예약
+      </S.ReservationButton>
+    </S.ReservationWrapper>
+  );
+};
+
+export default ResevationInfo;
+
+```
+antDesign을 사용하였기 때문에, antdesign의 공식 사이트에서 제공하는 옵션에 대해 보고 내가 원하는 형태를 선택하였고, nesting을 사용하여 상세한 디자인을 변경하였다. 
+각각 input에 기입되는 정보들은 useState를 사용하여 관리하였다. 
+
+submit 버튼 클릭시, ``` fetch(`http://10.58.3.127:8000/reservations/${params.id}```를 사용하여 해당 매장에 맞는 예약 정보가 POST방식으로 저장된다. 
+예약이 성공하면 예약 성공 alert창을 띄워 사용자에게 알려주었다.
+
+####  매장 상세 정보 (카카오 지도 API)
+
+![bobmorgan-2](https://user-images.githubusercontent.com/93850460/185530249-4cc1a7ff-705b-4cb9-bed1-d055dd6be5f0.gif)
+- 매장 정보중 매장의 위치는 카카오 지도 API를 사용하였다. 구글지도나 네이버등 다른 지도 API가 있지만 소셜 로그인 시 카카오를 사용하기로 했으므로, 동일하게 카카오 지도 API를 사용하였다.
+
+```javascript
+/*global kakao*/
+import React, { useEffect, useRef } from 'react';
+import * as S from './Map.styles';
+const Location = ({ detailInfo }) => {
+  const { place_latitude, place_longitude } = detailInfo;
+  const mapId = useRef();
+
+  useEffect(() => {
+    let options = {
+      center: new kakao.maps.LatLng(
+        Number(place_latitude),
+        Number(place_longitude)
+      ),
+      level: 3,
+    };
+
+    let map = new kakao.maps.Map(mapId.current, options);
+    let markerPosition = new kakao.maps.LatLng(
+      Number(place_latitude),
+      Number(place_longitude)
+    );
+    let marker = new kakao.maps.Marker({
+      position: markerPosition,
+    });
+    marker.setMap(map);
+  }, [place_latitude, place_longitude]);
+
+  return (
+    <div>
+      <S.Map ref={mapId} />
+    </div>
+  );
+};
+
+export default Location;
+```
+미리 입력시켜둔 매장위치의 위도 경도값을 받아와 화면에 표시되게 하였다 
+
+❗️주의 </br>
+마냥 쉽게 생각했는데, 카카오 지도를 사용하기 위해서는 ```<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=발급받은 APP KEY를 사용하세요&libraries=services"></script> ``` 이와 같이 발급받은 APP KEY를 사용해야 한다. 하지만 이 부분은 소중한 개인정보 함부로 유출되면 안되는 영역임으로 .env를 따로 만들어 개인정보를 보호하였다. 
+
+```javascript
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, Link, useParams } from 'react-router-dom';
+import { API } from '../../config';
+import Carousel from './DetailCarousel';
+import Review from './Review';
+import Map from './Map';
+import ReservatonInfo from './ReservationInfo';
+
+import * as S from './Detail.styles';
+const Detail = () => {
+  const [isScroll, isSetScroll] = useState(false);
+  const [detailInfo, setDetailInfo] = useState({});
+
+  const detailRef = useRef(null);
+
+  const navigate = useNavigate();
+  const params = useParams();
+
+  useEffect(() => {
+    fetch(`http://10.58.3.127:8000/places/${params.id}`)
+      // fetch(`/data/detail.json`)
+      .then(res => res.json())
+      .then(detailInfo => {
+        setDetailInfo(detailInfo.results);
+      });
+  }, [params]);
+
+  useEffect(() => {
+    window.addEventListener('scroll', scrollButtonView);
+    return () => {
+      window.removeEventListener('scroll', scrollButtonView);
+    };
+  }, []);
+  const goTopScroll = () => {
+    detailRef.current.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const goToMain = () => {
+    navigate('/');
+  };
+  const scrollButtonView = () => {
+    if (window.scrollY >= 120) {
+      isSetScroll(true);
+    } else {
+      isSetScroll(false);
+    }
+  };
+
+  const isDataEmpty = Object.keys(detailInfo).length === 0;
+  if (isDataEmpty) return <>Loading,...</>;
+
+  const STORE_INFO = [
+    {
+      id: 1,
+      title: '주소',
+      result: detailInfo.place_address,
+    },
+    {
+      id: 2,
+      title: '영업 시간',
+      result: detailInfo.place_opening_hours,
+    },
+    {
+      id: 3,
+      title: '대표 메뉴',
+      result: detailInfo.menus[0].name,
+    },
+  ];
+
+  return (
+    <S.Detail ref={detailRef}>
+      <S.CarouselSection />
+      <Carousel carouselImage={detailInfo.place_images} />
+      <S.CarouselSection />
+      <S.ReservationSection>
+        <ReservatonInfo
+          placeName={detailInfo.place_name}
+          placeRegion={detailInfo.place_region}
+        />
+      </S.ReservationSection>
+      <S.Wrapper>
+        <S.Container>
+          {isScroll && (
+            <S.MoveTopButton
+              src="/images/buttonImage/imgTopBtn.png"
+              alt="화면상단이동버튼"
+              onClick={() => {
+                goTopScroll();
+              }}
+            />
+          )}
+
+          <S.Header>
+            <S.HeaderTop>
+              <S.Region>{detailInfo.place_region} </S.Region>
+            </S.HeaderTop>
+            <S.HeaderTitle>{detailInfo.place_name}</S.HeaderTitle>
+            <S.HeaderDescription>
+              {detailInfo.place_description}
+            </S.HeaderDescription>
+          </S.Header>
+          <S.MenuInfo>
+            <S.ContentsTitle>메뉴 정보</S.ContentsTitle>
+            <S.MenuContents>
+              <S.MenuImage
+                src={detailInfo.place_images[0].url}
+                alt={detailInfo.place_name}
+              />
+              <S.Menulist>
+                <S.MenuTitle>메뉴 이름 및 가격 </S.MenuTitle>
+                {detailInfo.menus.map(menuInfo => {
+                  return (
+                    <S.Menu key={menuInfo.id}>
+                      <S.MenuName> {menuInfo.name}</S.MenuName>
+                      <S.MenuPrice>{menuInfo.price}원</S.MenuPrice>
+                    </S.Menu>
+                  );
+                })}
+              </S.Menulist>
+            </S.MenuContents>
+          </S.MenuInfo>
+
+          <S.Contents>
+            <S.ContentsTitle>가게 정보</S.ContentsTitle>
+            <S.MapSection>
+              <S.Map>
+                <Map detailInfo={detailInfo} />
+              </S.Map>
+              <S.goToMapButton>
+                <S.ButtonImage
+                  src="/images/icon/location.png"
+                  alt="지도 아이콘"
+                />
+                지도보기
+              </S.goToMapButton>
+            </S.MapSection>
+            {STORE_INFO.map(storeInfo => {
+              return (
+                <S.StoreInfo key={storeInfo.id}>
+                  <S.StoreInfoTitle>{storeInfo.title}</S.StoreInfoTitle>
+                  <S.StoreInfoContents>{storeInfo.result}</S.StoreInfoContents>
+                </S.StoreInfo>
+              );
+            })}
+
+            <S.StoreInfo>
+              <S.StoreInfoTitle>주소</S.StoreInfoTitle>
+              <S.StoreInfoContents>
+                {detailInfo.place_address}
+              </S.StoreInfoContents>
+            </S.StoreInfo>
+          </S.Contents>
+          <S.ReviewSection>
+            <Review />
+          </S.ReviewSection>
+        </S.Container>
+      </S.Wrapper>
+      <S.DetailFooter>
+        <S.FooterContents>
+          <S.FooterLogo
+            src="/images/logo/bobMorgan-logo.png"
+            alt="BobMorgan Logo"
+            onClick={goToMain}
+          />
+          <S.ListMoveButton>
+            {detailInfo.place_region} 맛집 더 보기
+          </S.ListMoveButton>
+        </S.FooterContents>
+      </S.DetailFooter>
+    </S.Detail>
+  );
+};
+export default Detail;
+```
+상세 정보 표기시, 같은 형식으로 반복되는 부분은 map함수를 사용하여 중복되는 코드를 줄이고자 하였다.
 </br>
